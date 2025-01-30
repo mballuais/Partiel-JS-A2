@@ -46,19 +46,62 @@
           <h2>📜 Recettes disponibles</h2>
           <ul id="recipe-list" class="list-group"></ul>
         </div>
-        <div id="sauce-selector" class="card p-3 mt-4 d-none">
-          <h2>🧂 Choisissez une sauce</h2>
-          <div id="sauce-options" class="d-flex flex-wrap gap-2"></div>
-          <button id="confirm-sauce" class="btn btn-primary mt-3">
-            ✅ Confirmer
-          </button>
-        </div>
+
         <div class="card p-3 mt-4">
           <h2>🔥 Commandes en cuisine</h2>
+          <p class="text-gray-400">
+            Total : <span id="order-count">0</span> commandes en attente
+          </p>
           <ul id="order-list" class="list-group"></ul>
         </div>
       </div>
     </div>
+
+    <div
+      class="modal fade"
+      id="sauceModal"
+      tabindex="-1"
+      aria-labelledby="sauceModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="sauceModalLabel">
+              Choisissez une sauce
+            </h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Fermer"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <select id="sauce-select" class="form-select">
+              <option value="">-- Sélectionnez une sauce --</option>
+              <option value="Blanche">Blanche</option>
+              <option value="Samouraï">Samouraï</option>
+              <option value="Algérienne">Algérienne</option>
+              <option value="Harissa">Harissa</option>
+              <option value="Ketchup">Ketchup</option>
+              <option value="Mayonnaise">Mayonnaise</option>
+              <option value="Moutarde">Moutarde</option>
+              <option value="Barbecue">Barbecue</option>
+              <option value="Curry">Curry</option>
+              <option value="Biggy">Biggy</option>
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="confirmSauce">
+              Confirmer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
   </body>
 </html>

@@ -2,42 +2,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const recipeForm = document.getElementById("recipe-form");
   const recipeList = document.getElementById("recipe-list");
   const orderList = document.getElementById("order-list");
+  const orderCountSpan = document.getElementById("order-count");
+  const sauceSelect = document.getElementById("sauce-select");
+  const confirmSauceButton = document.getElementById("confirmSauce");
 
-  const sauceSelector = document.getElementById("sauce-selector");
-  const sauceOptions = document.getElementById("sauce-options");
-  const confirmSauceBtn = document.getElementById("confirm-sauce");
+  let currentRecipeText = "";
 
-  const sauces = [
-    "Blanche",
-    "Samouraï",
-    "Algérienne",
-    "Barbecue",
-    "Andalouse",
-    "Harissa",
-    "Ketchup",
-    "Mayonnaise",
-    "Moutarde",
-    "Pili-pili",
-    "Byggi",
-    "Sans Sauce",
-  ];
-  let selectedSauce = null;
-
-  function displaySauceOptions() {
-    sauceOptions.innerHTML = "";
-    sauces.forEach((sauce) => {
-      const btn = document.createElement("button");
-      btn.classList.add("btn", "btn-outline-secondary");
-      btn.textContent = sauce;
-      btn.onclick = () => {
-        selectedSauce = sauce;
-        document
-          .querySelectorAll("#sauce-options button")
-          .forEach((b) => b.classList.remove("btn-primary"));
-        btn.classList.add("btn-primary");
-      };
-      sauceOptions.appendChild(btn);
-    });
+  function updateOrderCount() {
+    orderCountSpan.textContent =
+      document.querySelectorAll("#order-list li").length;
   }
 
   function saveData() {
@@ -49,10 +22,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const orders = [];
     document.querySelectorAll("#order-list li").forEach((li) => {
-      const orderText = li.querySelector("span").innerText.split(" | ⏳ ")[0];
+      const orderText = li.dataset.text;
       const orderTime = li.dataset.time;
-      orders.push(`${orderText}|||${orderTime}`);
+      const orderDate = li.dataset.date;
+      orders.push(`${orderText}|||${orderTime}|||${orderDate}`);
     });
+
+    orders.sort((a, b) => {
+      const timeA = parseInt(a.split("|||")[1], 10);
+      const timeB = parseInt(b.split("|||")[1], 10);
+      return timeA - timeB;
+    });
+
     localStorage.setItem("orders", JSON.stringify(orders));
   }
 
@@ -63,9 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const savedOrders = JSON.parse(localStorage.getItem("orders")) || [];
+    savedOrders.sort((a, b) => {
+      const timeA = parseInt(a.split("|||")[1], 10);
+      const timeB = parseInt(b.split("|||")[1], 10);
+      return timeA - timeB;
+    });
+
     savedOrders.forEach((order) => {
-      const [text, orderTime] = order.split("|||");
-      addOrderToDOM(text, parseInt(orderTime, 10));
+      const [text, orderTime, orderDate] = order.split("|||");
+      addOrderToDOM(text, parseInt(orderTime, 10), orderDate, true);
     });
   }
 
@@ -78,17 +65,22 @@ document.addEventListener("DOMContentLoaded", () => {
       "align-items-center"
     );
     li.innerHTML = `
-            <span>${text}</span>
-            <div>
-                <button class="btn btn-success btn-sm send-to-kitchen">👨‍🍳 Envoyer en cuisine</button>
-                <button class="btn btn-danger btn-sm delete-recipe">🗑 Supprimer</button>
-            </div>
-        `;
+          <span>${text}</span>
+          <div>
+              <button class="btn btn-success btn-sm send-to-kitchen">👨‍🍳 Envoyer en cuisine</button>
+              <button class="btn btn-danger btn-sm delete-recipe">🗑 Supprimer</button>
+          </div>
+      `;
     recipeList.appendChild(li);
     if (save) saveData();
   }
 
-  function addOrderToDOM(text, orderTime) {
+  function addOrderToDOM(
+    text,
+    orderTime,
+    orderDate = null,
+    fromStorage = false
+  ) {
     const li = document.createElement("li");
     li.classList.add(
       "list-group-item",
@@ -97,39 +89,61 @@ document.addEventListener("DOMContentLoaded", () => {
       "align-items-center"
     );
     li.dataset.time = orderTime;
+    li.dataset.text = text;
 
-    const orderDate = new Date(orderTime);
-    const hours = orderDate.getHours().toString().padStart(2, "0");
-    const minutes = orderDate.getMinutes().toString().padStart(2, "0");
+    if (!orderDate) {
+      const now = new Date(orderTime);
+      orderDate = `${String(now.getDate()).padStart(2, "0")}/${String(
+        now.getMonth() + 1
+      ).padStart(2, "0")}/${now.getFullYear()}`;
+    }
+    li.dataset.date = orderDate;
+
+    const orderDateObj = new Date(orderTime);
+    const hours = String(orderDateObj.getHours()).padStart(2, "0");
+    const minutes = String(orderDateObj.getMinutes()).padStart(2, "0");
     const formattedTime = `${hours}:${minutes}`;
 
+    const orderTextDisplay = `${text} | 📅 ${orderDate} - 🕒 ${formattedTime}`;
+
     li.innerHTML = `
-            <span><strong>${text}</strong> | Commandé à ${formattedTime} | ⏳ <span class="timer">00m00s</span></span>
-            <button class="btn btn-primary btn-sm validate-order">✅ Valider</button>
-        `;
+          <span>
+              <strong>${orderTextDisplay}</strong> | ⏳ 
+              <span class="timer">00m00s</span>
+          </span>
+          <button class="btn btn-primary btn-sm validate-order">✅ Valider</button>
+      `;
 
     orderList.appendChild(li);
-    saveData();
+
+    if (!fromStorage) {
+      saveData();
+      updateOrderCount();
+    }
   }
 
   function updateTimers() {
+    const now = Date.now();
     document.querySelectorAll("#order-list li").forEach((li) => {
       const orderTime = parseInt(li.dataset.time, 10);
       if (!orderTime) return;
 
-      const now = new Date().getTime();
       const elapsed = Math.floor((now - orderTime) / 1000);
-      const minutes = Math.floor(elapsed / 60);
-      const seconds = elapsed % 60;
+      const mm = Math.floor(elapsed / 60);
+      const ss = elapsed % 60;
 
-      li.querySelector(".timer").textContent = `${minutes
-        .toString()
-        .padStart(2, "0")}m${seconds.toString().padStart(2, "0")}s`;
+      li.querySelector(".timer").textContent = `${String(mm).padStart(
+        2,
+        "0"
+      )}m${String(ss).padStart(2, "0")}s`;
     });
   }
 
-  setInterval(updateTimers, 1000);
-  loadData();
+  function handleValidateOrder(liElement) {
+    liElement.remove();
+    saveData();
+    updateOrderCount();
+  }
 
   recipeForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -151,46 +165,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
   recipeList.addEventListener("click", (event) => {
     if (event.target.classList.contains("delete-recipe")) {
-      event.target.closest("li").remove();
+      const liRecipe = event.target.closest("li");
+      liRecipe.remove();
       saveData();
+      updateOrderCount();
+    }
+
+    if (event.target.classList.contains("send-to-kitchen")) {
+      const liRecipe = event.target.closest("li");
+      currentRecipeText = liRecipe.querySelector("span").innerText;
+
+      const sauceModal = new bootstrap.Modal(
+        document.getElementById("sauceModal")
+      );
+      sauceModal.show();
     }
   });
 
-  recipeList.addEventListener("click", (event) => {
-    if (event.target.classList.contains("send-to-kitchen")) {
-      const recipeItem = event.target.closest("li");
-      const recipeText = recipeItem.querySelector("span").innerText;
+  confirmSauceButton.addEventListener("click", async () => {
+    const sauce = sauceSelect.value;
 
-      selectedSauce = null;
-      displaySauceOptions();
+    if (!sauce) {
+      alert("Veuillez choisir une sauce !");
+      return;
+    }
 
-      sauceSelector.classList.remove("d-none");
+    try {
+      const response = await fetch(
+        "https://timeapi.io/api/Time/current/zone?timeZone=Europe/Paris"
+      );
+      if (!response.ok) {
+        alert(
+          "Erreur lors de la récupération de l'heure via l'API. Commande non enregistrée."
+        );
+        return;
+      }
+      const data = await response.json();
+      const orderTime = Date.parse(data.dateTime);
 
-      confirmSauceBtn.onclick = () => {
-        if (!selectedSauce) {
-          alert("Veuillez sélectionner une sauce !");
-          return;
-        }
+      const orderText = `${currentRecipeText} | Sauce : ${sauce}`;
+      addOrderToDOM(orderText, orderTime);
 
-        fetch("https://timeapi.io/api/Time/current/zone?timeZone=Europe/Paris")
-          .then((response) => response.json())
-          .then((data) => {
-            const orderTime = new Date(data.dateTime).getTime();
-            const orderText = `${recipeText} | Sauce : ${selectedSauce}`;
-            addOrderToDOM(orderText, orderTime);
-            sauceSelector.classList.add("d-none");
-          })
-          .catch((error) =>
-            console.error("Erreur avec l'API de l'heure :", error)
-          );
-      };
+      const sauceModalEl = document.getElementById("sauceModal");
+      const modalInstance = bootstrap.Modal.getInstance(sauceModalEl);
+      modalInstance.hide();
+
+      sauceSelect.value = "";
+    } catch (error) {
+      alert("Impossible de récupérer l'heure via l'API. Commande annulée.");
+      console.error("Erreur avec l'API :", error);
     }
   });
 
   orderList.addEventListener("click", (event) => {
     if (event.target.classList.contains("validate-order")) {
-      event.target.closest("li").remove();
-      saveData();
+      const liOrder = event.target.closest("li");
+      handleValidateOrder(liOrder);
     }
   });
+
+  setInterval(updateTimers, 1000);
+  loadData();
 });
