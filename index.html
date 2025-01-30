@@ -38,6 +38,17 @@
                 placeholder="Ex : Viande, salade, tomate"
               />
             </div>
+            <div class="mb-3">
+              <label for="recipe-price" class="form-label">Prix (€) :</label>
+              <input
+                type="number"
+                id="recipe-price"
+                class="form-control"
+                placeholder="Ex : 8.50"
+                step="0.01"
+                min="0"
+              />
+            </div>
             <button type="submit" class="btn btn-primary">Ajouter</button>
           </form>
         </div>
@@ -50,7 +61,7 @@
         <div class="card p-3 mt-4">
           <h2>🔥 Commandes en cuisine</h2>
           <p class="text-gray-400">
-            Total : <span id="order-count">0</span> commandes en attente
+            Montant total : <span id="total-amount">0.00</span> €
           </p>
           <ul id="order-list" class="list-group"></ul>
         </div>
