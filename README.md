@@ -38,4 +38,4 @@ Pour faire fonctionner ce projet, assurez-vous d'avoir les éléments suivants i
 1. **Clonez le repository :**
 
    ```bash
-   git clone https://github.com/votre-nom-utilisateur/gestion-commandes-kebab.git
+   git clone https://github.com/mballuais/Partiel-JS-A2.git
